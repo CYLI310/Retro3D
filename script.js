@@ -53,13 +53,13 @@ let input = {
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let gameOver = false;
-let gameSpeed = 3;
+let gameSpeed = 5; // Increased initial speed
 let startTime = 0;
 let elapsedTime = 0;
 
 const gridSize = 10;
 const gridSpacing = 100;
-const roadWidth = 250;
+const roadWidth = 180; // Decreased road width
 let currentSegment = 0;
 let xOffset = 0;
 let turnDirection = 0;
@@ -70,20 +70,20 @@ function generateWorldSegment() {
     for (let i = 0; i < segmentsToGenerate; i++) {
         if (turnSegmentLength === 0) {
             const random = Math.random();
-            if (random < 0.4) {
+            if (random < 0.6) { // Increased turn frequency
                 turnDirection = (Math.random() < 0.5) ? -1 : 1;
-                turnSegmentLength = Math.floor(Math.random() * 10) + 15;
+                turnSegmentLength = Math.floor(Math.random() * 5) + 8; // Shorter turn segments
             } else {
                 turnDirection = 0;
-                turnSegmentLength = Math.floor(Math.random() * 15) + 10;
+                turnSegmentLength = Math.floor(Math.random() * 8) + 5; // Shorter straight segments
             }
         }
 
-        if (Math.abs(xOffset + turnDirection * 20) > 600) {
+        if (Math.abs(xOffset + turnDirection * 25) > 600) { // Increased turn sharpness
             turnDirection = -turnDirection;
         }
 
-        xOffset += turnDirection * 20;
+        xOffset += turnDirection * 25; // Increased turn sharpness
         roadPath.push(xOffset);
         turnSegmentLength--;
 
@@ -130,7 +130,7 @@ function resetGame() {
     turnSegmentLength = 0;
 
     score = 0;
-    gameSpeed = 3;
+    gameSpeed = 5; // Reset to increased initial speed
     startTime = performance.now();
     gameOver = false;
 
@@ -247,7 +247,7 @@ function render() {
         return;
     }
 
-    gameSpeed += 0.002;
+    gameSpeed += 0.005; // Increased speed acceleration
     world.zOffset += gameSpeed;
 
     animationFrameId = requestAnimationFrame(render);
