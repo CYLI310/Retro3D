@@ -21,8 +21,9 @@ class Point3D {
     }
 }
 
+const fov = 200;
+
 function project(point) {
-    const fov = 200;
     const scale = fov / (fov + point.z);
     return {
         x: point.x * scale + width / 2,
@@ -40,6 +41,7 @@ let roadPath = [];
 
 let player = {
     x: 0,
+    baseSpeed: 5,
     speed: 5,
 };
 
@@ -51,53 +53,49 @@ let input = {
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let gameOver = false;
-let gameSpeed = 2;
+let gameSpeed = 3;
 let startTime = 0;
 let elapsedTime = 0;
 
-
 const gridSize = 10;
 const gridSpacing = 100;
-const roadWidth = 200;
-const worldLength = 200;
+const roadWidth = 250;
+let currentSegment = 0;
+let xOffset = 0;
+let turnDirection = 0;
+let turnSegmentLength = 0;
 
-function generateWorld() {
-    world.points = [];
-    world.edges = [];
-    roadPath = [];
-
-    let xOffset = 0;
-    let turnDirection = 0;
-    let turnSegmentLength = 0;
-
-    for (let i = 0; i < worldLength; i++) {
+function generateWorldSegment() {
+    const segmentsToGenerate = 10;
+    for (let i = 0; i < segmentsToGenerate; i++) {
         if (turnSegmentLength === 0) {
             const random = Math.random();
-            if (random < 0.3) {
+            if (random < 0.4) {
                 turnDirection = (Math.random() < 0.5) ? -1 : 1;
-                turnSegmentLength = Math.floor(Math.random() * 15) + 10;
+                turnSegmentLength = Math.floor(Math.random() * 10) + 15;
             } else {
                 turnDirection = 0;
-                turnSegmentLength = Math.floor(Math.random() * 20) + 10;
+                turnSegmentLength = Math.floor(Math.random() * 15) + 10;
             }
         }
 
-        if (Math.abs(xOffset + turnDirection * 15) > 500) {
+        if (Math.abs(xOffset + turnDirection * 20) > 600) {
             turnDirection = -turnDirection;
         }
 
-        xOffset += turnDirection * 15;
+        xOffset += turnDirection * 20;
         roadPath.push(xOffset);
         turnSegmentLength--;
 
-        const z = i * gridSpacing;
+        const z = (currentSegment + i) * gridSpacing;
+        const currentPointsCount = world.points.length;
 
         // Floor lines
         for (let j = -gridSize / 2; j <= gridSize / 2; j++) {
             const x = j * gridSpacing + xOffset;
             world.points.push(new Point3D(x, 100, z));
             world.points.push(new Point3D(x, 100, z + gridSpacing));
-            world.edges.push([world.points.length - 2, world.points.length - 1]);
+            world.edges.push([currentPointsCount + (j + gridSize / 2) * 2, currentPointsCount + (j + gridSize / 2) * 2 + 1]);
         }
 
         for (let j = 0; j < gridSize; j++) {
@@ -108,28 +106,38 @@ function generateWorld() {
         }
 
         // "Buildings"
-        if (i > 10 && i % 5 === 0) {
+        if ((currentSegment + i) > 10 && (currentSegment + i) % 5 === 0) {
             world.points.push(new Point3D(-roadWidth + xOffset, 100, z));
-            world.points.push(new Point3D(-roadWidth + xOffset, -200, z));
+            world.points.push(new Point3D(-roadWidth + xOffset, -300, z));
             world.edges.push([world.points.length - 2, world.points.length - 1]);
 
             world.points.push(new Point3D(roadWidth + xOffset, 100, z));
-            world.points.push(new Point3D(roadWidth + xOffset, -200, z));
+            world.points.push(new Point3D(roadWidth + xOffset, -300, z));
             world.edges.push([world.points.length - 2, world.points.length - 1]);
         }
     }
+    currentSegment += segmentsToGenerate;
 }
 
 
 function resetGame() {
     player.x = 0;
-    world.zOffset = 0;
+    world = { points: [], edges: [], zOffset: 0 };
+    roadPath = [];
+    currentSegment = 0;
+    xOffset = 0;
+    turnDirection = 0;
+    turnSegmentLength = 0;
+
     score = 0;
-    gameSpeed = 2;
+    gameSpeed = 3;
     startTime = performance.now();
     gameOver = false;
-    generateWorld();
-    render();
+
+    generateWorldSegment();
+    if (!animationFrameId) {
+      render();
+    }
 }
 
 window.addEventListener('keydown', (e) => {
@@ -158,8 +166,11 @@ function formatTime(ms) {
     return `${minutes}:${(seconds < 10 ? '0' : '')}${seconds}`;
 }
 
+let animationFrameId = null;
+
 function render() {
     elapsedTime = performance.now() - startTime;
+    player.speed = player.baseSpeed + gameSpeed / 2;
 
     if (input.left) {
         player.x -= player.speed;
@@ -169,13 +180,15 @@ function render() {
     }
 
     const currentIndex = Math.floor(world.zOffset / gridSpacing);
+    if (currentIndex >= currentSegment - 15) {
+        generateWorldSegment();
+    }
+
     if (currentIndex < roadPath.length) {
         const currentXOffset = roadPath[currentIndex];
         if (player.x < currentXOffset - roadWidth || player.x > currentXOffset + roadWidth) {
             gameOver = true;
         }
-    } else {
-        gameOver = true; // End of the road
     }
 
 
@@ -186,7 +199,6 @@ function render() {
     }
 
     ctx.clearRect(0, 0, width, height);
-
     ctx.strokeStyle = '#0ff';
     ctx.beginPath();
 
@@ -194,13 +206,14 @@ function render() {
         const p1 = { ...world.points[edge[0]] };
         const p2 = { ...world.points[edge[1]] };
 
+        if (!p1 || !p2) continue;
+
         p1.x -= player.x;
         p2.x -= player.x;
         p1.z -= world.zOffset;
         p2.z -= world.zOffset;
 
-
-        if (p1.z < -200 || p2.z < -200) {
+        if (p1.z < -fov || p2.z > 10000) {
             continue;
         }
 
@@ -210,7 +223,6 @@ function render() {
         ctx.moveTo(projectedP1.x, projectedP1.y);
         ctx.lineTo(projectedP2.x, projectedP2.y);
     }
-
     ctx.stroke();
 
     ctx.fillStyle = '#0ff';
@@ -225,22 +237,22 @@ function render() {
     ctx.fillText(`Time: ${formatTime(elapsedTime)}`, width - 20, 40);
     ctx.fillText(`Speed: ${(gameSpeed * 10).toFixed(0)}`, width - 20, 70);
 
-
     if (gameOver) {
         ctx.textAlign = 'center';
         ctx.font = '48px "VT323", monospace';
         ctx.fillText('GAME OVER', width / 2, height / 2);
         ctx.font = '24px "VT323", monospace';
         ctx.fillText('Press any key to restart', width / 2, height / 2 + 40);
+        animationFrameId = null;
         return;
     }
 
-    gameSpeed += 0.001;
+    gameSpeed += 0.002;
     world.zOffset += gameSpeed;
 
-    requestAnimationFrame(render);
+    animationFrameId = requestAnimationFrame(render);
 }
 
 startTime = performance.now();
-generateWorld();
+generateWorldSegment();
 render();
