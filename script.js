@@ -240,7 +240,7 @@ function render() {
     if (gameOver) {
         ctx.textAlign = 'center';
         ctx.font = '48px "VT323", monospace';
-        ctx.fillText('GAME OVER', width / 2, height / 2);
+        ctx.fillText('GAME OVER', width / 5, height / 5);
         ctx.font = '24px "VT323", monospace';
         ctx.fillText('Press any key to restart', width / 2, height / 2 + 40);
         animationFrameId = null;
