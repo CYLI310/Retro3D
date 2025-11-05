@@ -53,13 +53,14 @@ let input = {
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let gameOver = false;
-let gameSpeed = 5; // Increased initial speed
+let gameSpeed = 5;
 let startTime = 0;
 let elapsedTime = 0;
+let level = 1;
 
 const gridSize = 10;
 const gridSpacing = 100;
-const roadWidth = 180; // Decreased road width
+const roadWidth = 180;
 let currentSegment = 0;
 let xOffset = 0;
 let turnDirection = 0;
@@ -70,20 +71,20 @@ function generateWorldSegment() {
     for (let i = 0; i < segmentsToGenerate; i++) {
         if (turnSegmentLength === 0) {
             const random = Math.random();
-            if (random < 0.6) { // Increased turn frequency
+            if (random < 0.6) {
                 turnDirection = (Math.random() < 0.5) ? -1 : 1;
-                turnSegmentLength = Math.floor(Math.random() * 5) + 8; // Shorter turn segments
+                turnSegmentLength = Math.floor(Math.random() * 5) + 8;
             } else {
                 turnDirection = 0;
-                turnSegmentLength = Math.floor(Math.random() * 8) + 5; // Shorter straight segments
+                turnSegmentLength = Math.floor(Math.random() * 8) + 5;
             }
         }
 
-        if (Math.abs(xOffset + turnDirection * 25) > 600) { // Increased turn sharpness
+        if (Math.abs(xOffset + turnDirection * 25) > 600) {
             turnDirection = -turnDirection;
         }
 
-        xOffset += turnDirection * 25; // Increased turn sharpness
+        xOffset += turnDirection * 25;
         roadPath.push(xOffset);
         turnSegmentLength--;
 
@@ -130,7 +131,8 @@ function resetGame() {
     turnSegmentLength = 0;
 
     score = 0;
-    gameSpeed = 5; // Reset to increased initial speed
+    gameSpeed = 5;
+    level = 1;
     startTime = performance.now();
     gameOver = false;
 
@@ -172,6 +174,12 @@ function render() {
     elapsedTime = performance.now() - startTime;
     player.speed = player.baseSpeed + gameSpeed / 2;
 
+    const currentLevel = Math.floor(elapsedTime / 20000) + 1;
+    if (currentLevel > level) {
+        level = currentLevel;
+        gameSpeed += 2.5;
+    }
+
     if (input.left) {
         player.x -= player.speed;
     }
@@ -180,7 +188,7 @@ function render() {
     }
 
     const currentIndex = Math.floor(world.zOffset / gridSpacing);
-    if (currentIndex >= currentSegment - 15) {
+    if (currentIndex >= currentSegment - 25) {
         generateWorldSegment();
     }
 
@@ -213,7 +221,7 @@ function render() {
         p1.z -= world.zOffset;
         p2.z -= world.zOffset;
 
-        if (p1.z < -fov || p2.z > 10000) {
+        if (p1.z < -fov || p2.z > 20000) { // Increased render distance
             continue;
         }
 
@@ -236,18 +244,19 @@ function render() {
     ctx.textAlign = 'right';
     ctx.fillText(`Time: ${formatTime(elapsedTime)}`, width - 20, 40);
     ctx.fillText(`Speed: ${(gameSpeed * 10).toFixed(0)}`, width - 20, 70);
+    ctx.fillText(`Level: ${level}`, width - 20, 100);
+
 
     if (gameOver) {
         ctx.textAlign = 'center';
         ctx.font = '48px "VT323", monospace';
-        ctx.fillText('GAME OVER', width / 5, height / 5);
+        ctx.fillText('GAME OVER', width / 2, height / 2);
         ctx.font = '24px "VT323", monospace';
         ctx.fillText('Press any key to restart', width / 2, height / 2 + 40);
         animationFrameId = null;
         return;
     }
 
-    gameSpeed += 0.005; // Increased speed acceleration
     world.zOffset += gameSpeed;
 
     animationFrameId = requestAnimationFrame(render);
