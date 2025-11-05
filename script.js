@@ -53,10 +53,14 @@ let input = {
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let gameOver = false;
+let paused = false;
 let gameSpeed = 5;
 let startTime = 0;
 let elapsedTime = 0;
+let lastPauseTime = 0;
+let totalPausedTime = 0;
 let level = 1;
+let levelUpMessageTime = 0;
 
 const gridSize = 10;
 const gridSpacing = 100;
@@ -134,7 +138,9 @@ function resetGame() {
     gameSpeed = 5;
     level = 1;
     startTime = performance.now();
+    totalPausedTime = 0;
     gameOver = false;
+    paused = false;
 
     generateWorldSegment();
     if (!animationFrameId) {
@@ -143,6 +149,14 @@ function resetGame() {
 }
 
 window.addEventListener('keydown', (e) => {
+    if (e.key === 'p' || e.key === 'P') {
+        paused = !paused;
+        if (paused) {
+            lastPauseTime = performance.now();
+        } else {
+            totalPausedTime += performance.now() - lastPauseTime;
+        }
+    }
     if (gameOver) {
         resetGame();
         return;
@@ -171,13 +185,24 @@ function formatTime(ms) {
 let animationFrameId = null;
 
 function render() {
-    elapsedTime = performance.now() - startTime;
+    animationFrameId = requestAnimationFrame(render);
+
+    if (paused) {
+        ctx.textAlign = 'center';
+        ctx.font = '48px "VT323", monospace';
+        ctx.fillText('PAUSED', width / 2, height / 2);
+        return;
+    }
+
+    const currentTime = performance.now();
+    elapsedTime = currentTime - startTime - totalPausedTime;
     player.speed = player.baseSpeed + gameSpeed / 2;
 
     const currentLevel = Math.floor(elapsedTime / 20000) + 1;
     if (currentLevel > level) {
         level = currentLevel;
         gameSpeed += 2.5;
+        levelUpMessageTime = currentTime;
     }
 
     if (input.left) {
@@ -198,7 +223,6 @@ function render() {
             gameOver = true;
         }
     }
-
 
     score = Math.floor(world.zOffset / 10);
     if (score > highScore) {
@@ -221,7 +245,7 @@ function render() {
         p1.z -= world.zOffset;
         p2.z -= world.zOffset;
 
-        if (p1.z < -fov || p2.z > 20000) { // Increased render distance
+        if (p1.z < -fov || p2.z > 20000) {
             continue;
         }
 
@@ -246,6 +270,11 @@ function render() {
     ctx.fillText(`Speed: ${(gameSpeed * 10).toFixed(0)}`, width - 20, 70);
     ctx.fillText(`Level: ${level}`, width - 20, 100);
 
+    if (levelUpMessageTime > 0 && currentTime - levelUpMessageTime < 2000) {
+        ctx.textAlign = 'center';
+        ctx.font = '48px "VT323", monospace';
+        ctx.fillText('LEVEL UP!', width / 2, height / 2);
+    }
 
     if (gameOver) {
         ctx.textAlign = 'center';
@@ -253,13 +282,12 @@ function render() {
         ctx.fillText('GAME OVER', width / 2, height / 2);
         ctx.font = '24px "VT323", monospace';
         ctx.fillText('Press any key to restart', width / 2, height / 2 + 40);
+        cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
         return;
     }
 
     world.zOffset += gameSpeed;
-
-    animationFrameId = requestAnimationFrame(render);
 }
 
 startTime = performance.now();
