@@ -182,6 +182,34 @@ function formatTime(ms) {
     return `${minutes}:${(seconds < 10 ? '0' : '')}${seconds}`;
 }
 
+function drawPlayerFigure() {
+    ctx.strokeStyle = '#0ff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    const centerX = width / 2;
+    const bottomY = height - 20;
+
+    // Main ship body - a triangle
+    ctx.moveTo(centerX, bottomY - 50); // Tip of the ship
+    ctx.lineTo(centerX - 35, bottomY); // Left wing
+    ctx.lineTo(centerX + 35, bottomY); // Right wing
+    ctx.closePath();
+
+    // Inner cockpit lines
+    ctx.moveTo(centerX, bottomY - 40);
+    ctx.lineTo(centerX - 20, bottomY);
+    ctx.moveTo(centerX, bottomY - 40);
+    ctx.lineTo(centerX + 20, bottomY);
+    ctx.moveTo(centerX - 15, bottomY);
+    ctx.lineTo(centerX + 15, bottomY);
+
+
+    ctx.stroke();
+    ctx.lineWidth = 1;
+}
+
+
 let animationFrameId = null;
 
 function render() {
@@ -256,6 +284,8 @@ function render() {
         ctx.lineTo(projectedP2.x, projectedP2.y);
     }
     ctx.stroke();
+
+    drawPlayerFigure();
 
     ctx.fillStyle = '#0ff';
     ctx.font = '24px "VT323", monospace';
