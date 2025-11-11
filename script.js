@@ -76,12 +76,12 @@ function generateWorldSegment() {
     for (let i = 0; i < segmentsToGenerate; i++) {
         if (turnSegmentLength === 0) {
             const random = Math.random();
-            if (random < 0.7) {
+            if (random < 0.8) { // Increased turn frequency to 80%
                 turnDirection = (Math.random() < 0.5) ? -1 : 1;
-                turnSegmentLength = Math.floor(Math.random() * 4) + 6;
+                turnSegmentLength = Math.floor(Math.random() * 3) + 4; // Shorter turn segments (4-6)
             } else {
                 turnDirection = 0;
-                turnSegmentLength = Math.floor(Math.random() * 6) + 4;
+                turnSegmentLength = Math.floor(Math.random() * 4) + 2; // Shorter straight segments (2-5)
             }
         }
 
