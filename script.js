@@ -43,6 +43,7 @@ let player = {
     x: 0,
     baseSpeed: 5,
     speed: 5,
+    width: 35, // Defining player width in world units for collision
 };
 
 let input = {
@@ -54,7 +55,7 @@ let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
 let gameOver = false;
 let paused = false;
-let gameSpeed = 5;
+let gameSpeed = 6;
 let startTime = 0;
 let elapsedTime = 0;
 let lastPauseTime = 0;
@@ -64,7 +65,7 @@ let levelUpMessageTime = 0;
 
 const gridSize = 10;
 const gridSpacing = 100;
-const roadWidth = 180;
+const roadWidth = 160;
 let currentSegment = 0;
 let xOffset = 0;
 let turnDirection = 0;
@@ -75,20 +76,20 @@ function generateWorldSegment() {
     for (let i = 0; i < segmentsToGenerate; i++) {
         if (turnSegmentLength === 0) {
             const random = Math.random();
-            if (random < 0.6) {
+            if (random < 0.7) {
                 turnDirection = (Math.random() < 0.5) ? -1 : 1;
-                turnSegmentLength = Math.floor(Math.random() * 5) + 8;
+                turnSegmentLength = Math.floor(Math.random() * 4) + 6;
             } else {
                 turnDirection = 0;
-                turnSegmentLength = Math.floor(Math.random() * 8) + 5;
+                turnSegmentLength = Math.floor(Math.random() * 6) + 4;
             }
         }
 
-        if (Math.abs(xOffset + turnDirection * 25) > 600) {
+        if (Math.abs(xOffset + turnDirection * 30) > 700) {
             turnDirection = -turnDirection;
         }
 
-        xOffset += turnDirection * 25;
+        xOffset += turnDirection * 30;
         roadPath.push(xOffset);
         turnSegmentLength--;
 
@@ -111,7 +112,7 @@ function generateWorldSegment() {
         }
 
         // "Buildings"
-        if ((currentSegment + i) > 10 && (currentSegment + i) % 5 === 0) {
+        if ((currentSegment + i) > 10 && (currentSegment + i) % 4 === 0) {
             world.points.push(new Point3D(-roadWidth + xOffset, 100, z));
             world.points.push(new Point3D(-roadWidth + xOffset, -300, z));
             world.edges.push([world.points.length - 2, world.points.length - 1]);
@@ -135,7 +136,7 @@ function resetGame() {
     turnSegmentLength = 0;
 
     score = 0;
-    gameSpeed = 5;
+    gameSpeed = 6;
     level = 1;
     startTime = performance.now();
     totalPausedTime = 0;
@@ -192,8 +193,8 @@ function drawPlayerFigure() {
 
     // Main ship body - a triangle
     ctx.moveTo(centerX, bottomY - 50); // Tip of the ship
-    ctx.lineTo(centerX - 35, bottomY); // Left wing
-    ctx.lineTo(centerX + 35, bottomY); // Right wing
+    ctx.lineTo(centerX - player.width, bottomY); // Left wing
+    ctx.lineTo(centerX + player.width, bottomY); // Right wing
     ctx.closePath();
 
     // Inner cockpit lines
@@ -229,7 +230,7 @@ function render() {
     const currentLevel = Math.floor(elapsedTime / 20000) + 1;
     if (currentLevel > level) {
         level = currentLevel;
-        gameSpeed += 2.5;
+        gameSpeed += 3;
         levelUpMessageTime = currentTime;
     }
 
@@ -247,7 +248,12 @@ function render() {
 
     if (currentIndex < roadPath.length) {
         const currentXOffset = roadPath[currentIndex];
-        if (player.x < currentXOffset - roadWidth || player.x > currentXOffset + roadWidth) {
+        const playerLeft = player.x - player.width;
+        const playerRight = player.x + player.width;
+        const roadLeft = currentXOffset - roadWidth;
+        const roadRight = currentXOffset + roadWidth;
+
+        if (playerLeft < roadLeft || playerRight > roadRight) {
             gameOver = true;
         }
     }
