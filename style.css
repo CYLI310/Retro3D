@@ -19,15 +19,18 @@ canvas {
     left: 0;
     width: 100%;
     height: 30%;
-    pointer-events: none; /* Allows clicks to pass through the container */
+    pointer-events: none;
 }
 
 .control {
     position: absolute;
     width: 50%;
     height: 100%;
-    pointer-events: auto; /* Re-enable pointer events for the buttons */
-    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #left-control {
@@ -40,9 +43,25 @@ canvas {
     bottom: 0;
 }
 
-/* Visual feedback for the controls */
-.control:active, .control:hover {
-    background-color: rgba(0, 255, 255, 0.1);
-    border: 2px solid rgba(0, 255, 255, 0.3);
-    box-sizing: border-box;
+.control::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 30px 50px 30px 50px;
+    opacity: 0.5;
+}
+
+#left-control::before {
+    border-color: transparent #0ff transparent transparent;
+}
+
+#right-control::before {
+    border-color: transparent transparent transparent #0ff;
+}
+
+.control:active::before, .control:hover::before {
+    opacity: 1;
+    text-shadow: 0 0 10px #0ff;
 }

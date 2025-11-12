@@ -251,7 +251,7 @@ function drawPlayerFigure() {
     ctx.beginPath();
 
     const centerX = width / 2;
-    const bottomY = height - 100; // Raised the ship higher
+    const bottomY = height - 100;
 
     ctx.moveTo(centerX, bottomY - 50);
     ctx.lineTo(centerX - player.width, bottomY);
@@ -300,17 +300,25 @@ function render() {
         player.x += player.speed;
     }
 
-    const currentIndex = Math.floor(world.zOffset / gridSpacing);
-    if (currentIndex >= currentSegment - 25) {
+    // Check for world generation
+    const generationIndex = Math.floor(world.zOffset / gridSpacing);
+    if (generationIndex >= currentSegment - 25) {
         generateWorldSegment();
     }
 
-    if (currentIndex < roadPath.length) {
-        const currentXOffset = roadPath[currentIndex];
+    // Collision detection
+    // The collision was being checked too far in front of the player (250 units),
+    // making it feel disconnected from the player ship's visual position.
+    // Reducing this Z-depth to a smaller value makes the collision feel more immediate and fair.
+    const collisionZ = 50; // Check collision closer to the camera.
+    const collisionIndex = Math.floor((world.zOffset + collisionZ) / gridSpacing);
+
+    if (collisionIndex < roadPath.length) {
+        const roadXOffset = roadPath[collisionIndex];
         const playerLeft = player.x - player.width;
         const playerRight = player.x + player.width;
-        const roadLeft = currentXOffset - roadWidth;
-        const roadRight = currentXOffset + roadWidth;
+        const roadLeft = roadXOffset - roadWidth;
+        const roadRight = roadXOffset + roadWidth;
 
         if (playerLeft < roadLeft || playerRight > roadRight) {
             gameOver = true;
