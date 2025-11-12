@@ -174,6 +174,7 @@ function resetGame() {
     }
 }
 
+// Keyboard Input
 window.addEventListener('keydown', (e) => {
     if (e.key === 'p' || e.key === 'P') {
         paused = !paused;
@@ -202,6 +203,42 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
+// On-Screen Controls Input
+const leftControl = document.getElementById('left-control');
+const rightControl = document.getElementById('right-control');
+
+function handleStart(e) {
+    e.preventDefault();
+    if (e.currentTarget.id === 'left-control') {
+        input.left = true;
+    } else {
+        input.right = true;
+    }
+}
+
+function handleEnd(e) {
+    e.preventDefault();
+    if (e.currentTarget.id === 'left-control') {
+        input.left = false;
+    } else {
+        input.right = false;
+    }
+}
+
+leftControl.addEventListener('touchstart', handleStart, { passive: false });
+leftControl.addEventListener('mousedown', handleStart);
+rightControl.addEventListener('touchstart', handleStart, { passive: false });
+rightControl.addEventListener('mousedown', handleStart);
+
+leftControl.addEventListener('touchend', handleEnd, { passive: false });
+leftControl.addEventListener('mouseup', handleEnd);
+leftControl.addEventListener('mouseleave', handleEnd);
+rightControl.addEventListener('touchend', handleEnd, { passive: false });
+rightControl.addEventListener('mouseup', handleEnd);
+rightControl.addEventListener('mouseleave', handleEnd);
+
+
+
 function formatTime(ms) {
     const minutes = Math.floor(ms / 60000);
     const seconds = ((ms % 60000) / 1000).toFixed(0);
@@ -214,7 +251,7 @@ function drawPlayerFigure() {
     ctx.beginPath();
 
     const centerX = width / 2;
-    const bottomY = height - 20;
+    const bottomY = height - 100; // Raised the ship higher
 
     ctx.moveTo(centerX, bottomY - 50);
     ctx.lineTo(centerX - player.width, bottomY);
