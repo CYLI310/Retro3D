@@ -28,6 +28,7 @@ function project(point) {
     return {
         x: point.x * scale + width / 2,
         y: point.y * scale + height / 2,
+        scale: scale,
     };
 }
 
@@ -37,13 +38,16 @@ let world = {
     zOffset: 0,
 };
 
+let stars = [];
+const starCount = 500;
+
 let roadPath = [];
 
 let player = {
     x: 0,
     baseSpeed: 5,
     speed: 5,
-    width: 35, // Defining player width in world units for collision
+    width: 35,
 };
 
 let input = {
@@ -71,17 +75,29 @@ let xOffset = 0;
 let turnDirection = 0;
 let turnSegmentLength = 0;
 
+function initStars() {
+    stars = [];
+    for (let i = 0; i < starCount; i++) {
+        stars.push({
+            x: (Math.random() - 0.5) * 4000,
+            y: (Math.random() - 0.5) * 2000,
+            z: Math.random() * 20000,
+        });
+    }
+}
+
+
 function generateWorldSegment() {
     const segmentsToGenerate = 10;
     for (let i = 0; i < segmentsToGenerate; i++) {
         if (turnSegmentLength === 0) {
             const random = Math.random();
-            if (random < 0.8) { // Increased turn frequency to 80%
+            if (random < 0.8) {
                 turnDirection = (Math.random() < 0.5) ? -1 : 1;
-                turnSegmentLength = Math.floor(Math.random() * 3) + 4; // Shorter turn segments (4-6)
+                turnSegmentLength = Math.floor(Math.random() * 3) + 4;
             } else {
                 turnDirection = 0;
-                turnSegmentLength = Math.floor(Math.random() * 4) + 2; // Shorter straight segments (2-5)
+                turnSegmentLength = Math.floor(Math.random() * 4) + 2;
             }
         }
 
@@ -121,6 +137,14 @@ function generateWorldSegment() {
             world.points.push(new Point3D(roadWidth + xOffset, -300, z));
             world.edges.push([world.points.length - 2, world.points.length - 1]);
         }
+
+        // Sky Grid
+        if ((currentSegment + i) % 3 === 0) {
+            const skyGridY = -400;
+            world.points.push(new Point3D(-2000, skyGridY, z));
+            world.points.push(new Point3D(2000, skyGridY, z));
+            world.edges.push([world.points.length - 2, world.points.length - 1]);
+        }
     }
     currentSegment += segmentsToGenerate;
 }
@@ -143,6 +167,7 @@ function resetGame() {
     gameOver = false;
     paused = false;
 
+    initStars();
     generateWorldSegment();
     if (!animationFrameId) {
       render();
@@ -191,20 +216,17 @@ function drawPlayerFigure() {
     const centerX = width / 2;
     const bottomY = height - 20;
 
-    // Main ship body - a triangle
-    ctx.moveTo(centerX, bottomY - 50); // Tip of the ship
-    ctx.lineTo(centerX - player.width, bottomY); // Left wing
-    ctx.lineTo(centerX + player.width, bottomY); // Right wing
+    ctx.moveTo(centerX, bottomY - 50);
+    ctx.lineTo(centerX - player.width, bottomY);
+    ctx.lineTo(centerX + player.width, bottomY);
     ctx.closePath();
 
-    // Inner cockpit lines
     ctx.moveTo(centerX, bottomY - 40);
     ctx.lineTo(centerX - 20, bottomY);
     ctx.moveTo(centerX, bottomY - 40);
     ctx.lineTo(centerX + 20, bottomY);
     ctx.moveTo(centerX - 15, bottomY);
     ctx.lineTo(centerX + 15, bottomY);
-
 
     ctx.stroke();
     ctx.lineWidth = 1;
@@ -265,9 +287,27 @@ function render() {
     }
 
     ctx.clearRect(0, 0, width, height);
+
+    // Draw Stars
+    ctx.fillStyle = '#fff';
+    for (const star of stars) {
+        star.z -= gameSpeed * 0.5;
+        if (star.z < 1) {
+            star.z = 20000;
+        }
+
+        const projected = project({ x: star.x - player.x, y: star.y, z: star.z });
+
+        if (projected.x > 0 && projected.x < width && projected.y > 0 && projected.y < height) {
+            const size = (1 - star.z / 20000) * 2;
+            ctx.fillRect(projected.x, projected.y, size, size);
+        }
+    }
+
+
+    // Draw World
     ctx.strokeStyle = '#0ff';
     ctx.beginPath();
-
     for (const edge of world.edges) {
         const p1 = { ...world.points[edge[0]] };
         const p2 = { ...world.points[edge[1]] };
@@ -326,6 +366,4 @@ function render() {
     world.zOffset += gameSpeed;
 }
 
-startTime = performance.now();
-generateWorldSegment();
-render();
+resetGame();
